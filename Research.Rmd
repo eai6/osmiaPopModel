@@ -1,0 +1,134 @@
+---
+title: "Prism_tutorials"
+author: "Edward Amoah"
+date: "2024-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load prism and set prism directory
+library(prism)
+prism_set_dl_dir("data/prism")
+```
+
+```{r}
+# download sample mean temperature
+get_prism_dailys(
+  type = "ppt", 
+  minDate = "2022-01-01", 
+  maxDate = "2024-04-23", 
+  keepZip = FALSE
+)
+
+
+get_prism_dailys(
+  type = "tmean", 
+  minDate = "2022-01-01", 
+  maxDate = "2024-04-23", 
+  keepZip = FALSE
+)
+
+#https://mrke.github.io/
+
+
+# http://services.nacse.org/prism/data/public/4km/tmean/20040402 did not download
+
+#Warning: You have tried to download the file PRISM_ppt_stable_4kmD2_20141114_bil.zip more than twice in one day (Pacific local #time).  Note that repeated offenses may result in your IP address being blocked.
+```
+
+
+```{r}
+# getting data
+june10 <- prism_archive_subset(
+  "tmean", "daily", date = "2013-06-10"
+)
+
+june <- prism_archive_subset(
+  "tmean", "daily", minDate = "2013-06-01", maxDate = "2013-06-14"
+)
+
+```
+
+```{r}
+# make a plot
+library(raster)
+library(ggplot2)
+# data already exist in the prism dl dir
+#boulder <- c(-105.2797, 40.0176)
+boulder <- c(-77.8580, 40.9525)
+
+# prism_archive_subset() will return prism data that matches the specified 
+# variable, time step, years, months, days, etc.
+#to_slice <- prism_archive_subset("tmean", "monthly", mon = 1)
+p <- pd_plot_slice(june, boulder)
+
+# add a linear average and title
+p + 
+  stat_smooth(method="lm", se = FALSE) + 
+  theme_bw() + 
+  ggtitle("Average January temperature in Boulder, CO 1982-2014")
+
+```
+
+```{r}
+# get and plot raster
+library(raster)
+
+rast = raster(pd_to_file(june10))
+
+plot(rast)
+```
+
+
+```{r}
+library(sf)
+shp <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/prism_4km_mesh/prism_4km_mesh.shp")
+```
+
+
+```{r}
+# filter PA data
+pa = subset(us_states, NAME == 'Pennsylvania')
+pa_geom = pa$geometry
+grids = shp # this are the grids from prism
+
+library(sf)
+
+filtered_grids = st_intersection(grids, pa_geom)
+```
+
+```{r}
+
+
+
+```
+
+
+
+
+```{r}
+
+# get raster data
+june <- prism_archive_subset(
+  "tmean", "daily", minDate = "2013-06-01", maxDate = "2013-06-14"
+)
+
+# create a raster star
+mystack <- pd_stack(june)
+
+data <- extract(mystack, filtered_grids)
+
+
+```
+
+```{r}
+# Example correction assuming 'data' is a list
+# Remove elements with differing lengths
+
+filtered_df <- filtered_grids[, c("lon", "lat")]
+
+```

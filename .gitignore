@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data
+docs
+osmiaPopModel_python/data
+output
+.DS_Store

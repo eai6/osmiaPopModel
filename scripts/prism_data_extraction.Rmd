@@ -1,0 +1,160 @@
+---
+title: "Data Extraction"
+author: "Edward Amoah"
+date: "2024-04-22"
+output: html_document
+---
+
+```{r}
+# load prism and set prism directory
+library(prism)
+library(sf)
+prism_set_dl_dir("../data/prism")
+```
+
+```{r}
+# get data prism data
+
+tmean <- prism_archive_subset(
+  "tmean", "daily", minDate = "2008-01-01", maxDate = "2024-04-23"
+)
+
+ppt <- prism_archive_subset(
+  "ppt", "daily", minDate = "2008-01-01", maxDate = "2024-04-23"
+)
+
+```
+
+```{r}
+# create a raster stack from prism data 
+
+tmean_stack <- pd_stack(tmean)
+
+ppt_stack <- pd_stack(ppt)
+
+```
+
+
+```{r}
+# load Pennsylvania prism points 
+library(sf)
+
+pennsylvania_orig <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/output/pennsylvania_prism_grids/grids.shp")
+
+pennsylvania <- pennsylvania_orig[, c("lon", "lat")]
+
+pennsylvania <- st_drop_geometry(pennsylvania)
+
+```
+
+
+
+```{r}
+## extract data
+
+tmean_extracts <- extract(tmean_stack, pennsylvania)
+
+ppt_extracts <- extract(ppt_stack, pennsylvania)
+
+```
+
+
+```{r}
+#tmean_bind <- cbind(pennsylvania, tmean_extracts)
+
+#ppt_bind <- cbind(pennsylvania, ppt_extracts)
+
+```
+
+
+```{r}
+# save data as csv
+
+#write.csv(tmean_bind, "../output/tmean_prism_pennsylvania_data.csv")
+
+#write.csv(ppt_bind, "../output/ppt_prism_pennsylvania_data.csv")
+
+```
+
+
+############################### load spring foraging quality data #################################
+
+```{r}
+library(raster)
+
+file_paths <- c("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2021_pa.tif", "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2020_pa.tif", "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2019_pa.tif", "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2018_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2017_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2016_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2015_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2014_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2013_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2012_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2011_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2010_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2009_pa.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2008_pa.tif"
+)
+
+foraging_stack <- stack(file_paths)
+
+```
+
+
+
+```{r}
+# extract from spring foraging stack
+
+foraging_stack_pa_crs <- projectRaster(foraging_stack, crs=crs(pennsylvania_orig)) # make sure they all have the same crs
+
+#foraging_extract <- extract(foraging_stack, pennsylvania_orig)
+
+```
+
+```{r}
+
+foraging_extract_new <- extract(foraging_stack_pa_crs, pennsylvania)
+
+foraging_bind <- cbind(pennsylvania, foraging_extract_new)
+
+write.csv(foraging_bind, "../output/foraging_quality_pennsylvania_data.csv")
+
+```
+
+```{r}
+
+# add col and row for indexing 
+
+pa_bind <- pennsylvania_orig[, c("col", "row", "lon", "lat")]
+
+tmean_bind_new <- cbind(pa_bind, tmean_extracts)
+
+ppt_bind_new <- cbind(pa_bind, ppt_extracts)
+
+foraging_bind_new <- cbind(pa_bind, foraging_extract_new)
+
+```
+
+```{r}
+
+# save data
+
+foraging_bind_new <-st_drop_geometry(foraging_bind_new)
+#write.csv(foraging_bind_new, "../output/foraging_quality_pennsylvania_data.csv")
+
+tmean_bind_new <- st_drop_geometry(tmean_bind_new)
+write.csv(tmean_bind_new, "../output/tmean_prism_pennsylvania_data.csv")
+
+ppt_bind_new <- st_drop_geometry(ppt_bind_new)
+write.csv(ppt_bind_new, "../output/ppt_prism_pennsylvania_data.csv")
+
+```
+
+
+```{r}
+
+pa_bind_no_geometry <- st_drop_geometry(pa_bind)
+
+write.csv(pa_bind, "../output/pennsylvania_prism_grid_points_no_geom.csv")
+
+```
+
