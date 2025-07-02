@@ -9,26 +9,36 @@ output: html_document
 # load prism and set prism directory
 library(prism)
 library(sf)
-prism_set_dl_dir("../data/prism")
+library(terra)
+prism_set_dl_dir("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/prism")
 ```
 
 ```{r}
 # get data prism data
 
 tmean <- prism_archive_subset(
-  "tmean", "daily", minDate = "2008-01-01", maxDate = "2024-04-23"
+  "tmean", 
+  "daily", 
+   minDate = "2016-11-01", 
+   maxDate = "2017-06-30",  
 )
 
+
 ppt <- prism_archive_subset(
-  "ppt", "daily", minDate = "2008-01-01", maxDate = "2024-04-23"
+  "ppt", "daily", 
+  minDate = "2016-11-01", 
+  maxDate = "2017-06-30", 
 )
 
 ```
+
 
 ```{r}
 # create a raster stack from prism data 
 
 tmean_stack <- pd_stack(tmean)
+
+#tmean_stack <- pd_stack(tmean)
 
 ppt_stack <- pd_stack(ppt)
 
@@ -39,14 +49,15 @@ ppt_stack <- pd_stack(ppt)
 # load Pennsylvania prism points 
 library(sf)
 
-pennsylvania_orig <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/output/pennsylvania_prism_grids/grids.shp")
+#pennsylvania_orig <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/output/pennsylvania_prism_grids/grids.shp")
+
+pennsylvania_orig = st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/vg_spring_floral_resource_quality_4km_by_4km.shp")
 
 pennsylvania <- pennsylvania_orig[, c("lon", "lat")]
 
 pennsylvania <- st_drop_geometry(pennsylvania)
 
 ```
-
 
 
 ```{r}
@@ -60,9 +71,9 @@ ppt_extracts <- extract(ppt_stack, pennsylvania)
 
 
 ```{r}
-#tmean_bind <- cbind(pennsylvania, tmean_extracts)
+tmean_bind <- cbind(st_drop_geometry(pennsylvania_orig[, c("col", "row","lon", "lat", "Lctn_Cd", "sprng__")]), tmean_extracts)
 
-#ppt_bind <- cbind(pennsylvania, ppt_extracts)
+ppt_bind <- cbind(st_drop_geometry(pennsylvania_orig[, c("col", "row","lon", "lat", "Lctn_Cd", "sprng__")]), ppt_extracts)
 
 ```
 
@@ -70,9 +81,9 @@ ppt_extracts <- extract(ppt_stack, pennsylvania)
 ```{r}
 # save data as csv
 
-#write.csv(tmean_bind, "../output/tmean_prism_pennsylvania_data.csv")
+write.csv(tmean_bind, "../output/tmean_prism_virginia_data.csv", row.names = FALSE)
 
-#write.csv(ppt_bind, "../output/ppt_prism_pennsylvania_data.csv")
+write.csv(ppt_bind, "../output/ppt_prism_virginia_data.csv", row.names = FALSE)
 
 ```
 
@@ -128,9 +139,9 @@ pa_bind <- pennsylvania_orig[, c("col", "row", "lon", "lat")]
 
 tmean_bind_new <- cbind(pa_bind, tmean_extracts)
 
-ppt_bind_new <- cbind(pa_bind, ppt_extracts)
+#ppt_bind_new <- cbind(pa_bind, ppt_extracts)
 
-foraging_bind_new <- cbind(pa_bind, foraging_extract_new)
+#foraging_bind_new <- cbind(pa_bind, foraging_extract_new)
 
 ```
 
@@ -138,14 +149,14 @@ foraging_bind_new <- cbind(pa_bind, foraging_extract_new)
 
 # save data
 
-foraging_bind_new <-st_drop_geometry(foraging_bind_new)
+#foraging_bind_new <-st_drop_geometry(foraging_bind_new)
 #write.csv(foraging_bind_new, "../output/foraging_quality_pennsylvania_data.csv")
 
 tmean_bind_new <- st_drop_geometry(tmean_bind_new)
-write.csv(tmean_bind_new, "../output/tmean_prism_pennsylvania_data.csv")
+write.csv(tmean_bind_new, "../output/tmean_prism_pennsylvania_data_1990_2023.csv")
 
 ppt_bind_new <- st_drop_geometry(ppt_bind_new)
-write.csv(ppt_bind_new, "../output/ppt_prism_pennsylvania_data.csv")
+write.csv(ppt_bind_new, "../output/ppt_prism_pennsylvania_data_1990_2023.csv")
 
 ```
 

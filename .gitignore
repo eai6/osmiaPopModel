@@ -4,6 +4,8 @@
 .Ruserdata
 data
 docs
-osmiaPopModel_python/data
+Python_scripts/data
+Python_scripts/venv
 output
 .DS_Store
+venv

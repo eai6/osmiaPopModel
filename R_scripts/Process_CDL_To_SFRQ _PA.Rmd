@@ -1,0 +1,176 @@
+---
+title: "Process_CDL_to_SFRQ"
+author: "Edward Amoah"
+date: "2025-02-16"
+output: html_document
+---
+
+```{r}
+# install packages
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(terra)
+library(tidyterra)
+library(tigris)
+```
+
+```{r }
+# load new york cdl data
+library(raster)
+
+file_paths = c(
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2023_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2022_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2021_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2020_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2019_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2018_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2017_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2016_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2015_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2014_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2013_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2012_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2011_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2010_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2009_STATE_FIPS_42.tif",
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2008_STATE_FIPS_42.tif"
+)
+cdl_2023 = rast("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/pennsylvania/CDL_2023_STATE_FIPS_42.tif")
+
+#cdl = rast('/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/new_york/CDL_2015_STATE_FIPS_36.tif')
+foraging_stack <- rast(file_paths)
+```
+
+```{r}
+#crs(foraging_stack)
+cdl <- foraging_stack
+```
+
+```{r}
+plot(cdl)
+```
+
+```{r}
+# expert values of cdl classes
+reclass_table <- read.csv('/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/cdl_reclass_koh.csv')
+```
+
+```{r}
+# apply values to new york cdl
+cdl_floral_sp <- classify(cdl,
+                    reclass_table[,c("value",
+                                     "floral_resources_spring_index")])
+```
+
+```{r}
+cdl_floral_sp_2023 <- classify(cdl_2023,
+                    reclass_table[,c("value",
+                                     "floral_resources_spring_index")])
+```
+
+
+
+```{r}
+plot(cdl_floral_sp)
+```
+
+```{r}
+# load PRISM mesh
+pa_mesh <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/pennsylvania/pa_prism_4km_mesh_ny.shp")
+```
+
+
+```{r}
+plot(st_geometry(pa_mesh))
+```
+
+
+```{r}
+ny_mesh_sp2 <- terra::extract(cdl_floral_sp, pa_mesh, fun=mean, na.rm =TRUE)
+```
+
+
+```{r}
+ny_mesh_sp2_2023 <- terra::extract(cdl_floral_sp_2023, pa_mesh, fun=mean, na.rm =TRUE)
+```
+
+
+```{r}
+merged_data <- cbind(pa_mesh, ny_mesh_sp2)
+```
+
+
+```{r}
+merged_data1 <- cbind(pa_mesh, ny_mesh_sp2_2023)
+```
+
+
+```{r}
+ggplot(merged_data) +
+  geom_sf(aes(fill = Class_Names)) +
+  scale_fill_viridis_c(option = "plasma") +  # Adjust color scale if needed
+  theme_minimal() +
+  labs(title = "Spatial Distribution of Spring Floral Resource Quality",
+       fill = "Spring Floral Resource Quality")
+
+```
+
+
+```{r}
+# Convert extracted data to a data frame and remove geometry
+
+final_data <- st_drop_geometry(merged_data)
+
+# Rename column in a data frame
+  
+# Rename multiple columns using a pattern
+final_data <- final_data %>%
+  rename_with(~ paste0("spring_resource_quality_", 2023:2008), starts_with("Class_Names"))
+
+
+subset_data <- final_data[, c("col", "row", "lon", "lat", 
+                              "spring_resource_quality_2023",
+                              "spring_resource_quality_2022",
+                              "spring_resource_quality_2021",
+                              "spring_resource_quality_2020",
+                              "spring_resource_quality_2019",
+                              "spring_resource_quality_2018",
+                              "spring_resource_quality_2017",
+                              "spring_resource_quality_2016",
+                              "spring_resource_quality_2015",
+                              "spring_resource_quality_2014",
+                              "spring_resource_quality_2013",
+                              "spring_resource_quality_2012",
+                              "spring_resource_quality_2011",
+                              "spring_resource_quality_2010",
+                              "spring_resource_quality_2009",
+                              "spring_resource_quality_2008")]
+
+# Save to CSV
+write.csv(subset_data,"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/pa_spring_floral_resource_quality_4km_by_4km.csv", row.names = FALSE)
+
+```
+
+
+```{r}
+# Rename column in a data frame
+final_data <- st_drop_geometry(merged_data)
+
+points_with_polygons <- points_with_polygons %>%
+  rename(spring_resource_quality = Class_Names)
+
+subset_data <- points_with_polygons[, c("Site","col", "row", "lon", "lat", "spring_resource_quality")]
+
+# Save filtered polygons to a new shapefile
+st_write(subset_data, "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/ny_spring_floral_resource_quality_4km_by_4km.shp")
+
+subset_data <- st_drop_geometry(subset_data)
+
+# Save to CSV
+write.csv(subset_data,"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/ny_spring_floral_resource_quality_4km_by_4km.csv", row.names = FALSE)
+```
+
+
+

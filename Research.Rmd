@@ -12,32 +12,26 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 # load prism and set prism directory
 library(prism)
-prism_set_dl_dir("data/prism")
+prism_set_dl_dir("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/prism")
 ```
 
 ```{r}
 # download sample mean temperature
 get_prism_dailys(
   type = "ppt", 
-  minDate = "2022-01-01", 
-  maxDate = "2024-04-23", 
+  minDate = "2016-11-01", 
+  maxDate = "2017-02-28", 
   keepZip = FALSE
 )
 
 
 get_prism_dailys(
   type = "tmean", 
-  minDate = "2022-01-01", 
-  maxDate = "2024-04-23", 
+  minDate = "2016-11-01", 
+  maxDate = "2017-02-28", 
   keepZip = FALSE
 )
 
-#https://mrke.github.io/
-
-
-# http://services.nacse.org/prism/data/public/4km/tmean/20040402 did not download
-
-#Warning: You have tried to download the file PRISM_ppt_stable_4kmD2_20141114_bil.zip more than twice in one day (Pacific local #time).  Note that repeated offenses may result in your IP address being blocked.
 ```
 
 

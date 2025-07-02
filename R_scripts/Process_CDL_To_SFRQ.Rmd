@@ -1,0 +1,178 @@
+---
+title: "Process_CDL_to_SFRQ"
+author: "Edward Amoah"
+date: "2025-02-16"
+output: html_document
+---
+
+```{r}
+# install packages
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(terra)
+library(tidyterra)
+library(tigris)
+```
+
+```{r }
+# load new york cdl data
+cdl = rast('/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/new_york/CDL_2015_STATE_FIPS_36.tif')
+```
+
+```{r}
+crs(cdl)
+```
+
+```{r}
+plot(cdl)
+```
+
+```{r}
+# expert values of cdl classes
+reclass_table <- read.csv('/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/CDL/cdl_reclass_koh.csv')
+```
+
+```{r}
+# apply values to new york cdl
+cdl_floral_sp <- classify(cdl,
+                    reclass_table[,c("value",
+                                     "floral_resources_spring_index")])
+```
+
+```{r}
+plot(cdl_floral_sp)
+```
+
+```{r}
+# load PRISM mesh
+ny_mesh <- st_read("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/new_york/ny_prism_4km_mesh_ny.shp")
+```
+
+
+```{r}
+plot(st_geometry(ny_mesh))
+```
+
+
+```{r}
+ny_mesh_sp2 <- terra::extract(cdl_floral_sp, ny_mesh, fun=mean, na.rm =TRUE)
+```
+
+
+
+```{r}
+merged_data <- cbind(ny_mesh, ny_mesh_sp2)
+```
+
+
+
+```{r}
+ggplot(merged_data) +
+  geom_sf(aes(fill = Class_Names)) +
+  scale_fill_viridis_c(option = "plasma") +  # Adjust color scale if needed
+  theme_minimal() +
+  labs(title = "Spatial Distribution of Spring Floral Resource Quality",
+       fill = "Spring Floral Resource Quality")
+
+```
+
+
+```{r}
+
+# OR convert a data frame of points (with lat/lon) to SpatVector
+points_df <- read.csv('/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/Sites_lat_long.csv')
+
+```
+
+
+```{r}
+#points_sf <- st_as_sf(points_df, coords = c("lon", "lat"), crs = 4326)
+points_sf <- st_as_sf(points_df, coords = c("lon", "lat"), crs = st_crs(merged_data))
+```
+
+
+```{r}
+options(repr.plot.width = 12, repr.plot.height = 8)
+```
+
+```{r}
+p <- ggplot(merged_data) +
+  geom_sf(aes(fill = Class_Names)) +
+  scale_fill_viridis_c(option = "plasma") +  
+  geom_sf(data = points_sf, color = "red", size = 0.1) +  # Points
+  theme_minimal() +
+  labs(title = "Spatial Distribution of Spring Floral Resource Quality",
+       fill = "Spring Floral Resource Quality")
+
+# Save with a larger figure size (width x height in inches)
+ggsave("floral_resource_quality.png", p, width = 12, height = 8, dpi = 300)
+```
+
+
+```{r}
+# Perform a spatial join to extract polygon data for each point
+points_with_polygons <- st_join(points_sf, merged_data, left = FALSE)
+```
+
+
+```{r}
+hist(points_with_polygons$Class_Names)
+
+```
+
+```{r}
+plot(density(points_with_polygons$Class_Names), main = "Density Plot")
+
+```
+
+
+```{r}
+qqnorm(points_with_polygons$Class_Names)
+qqline(points_with_polygons$Class_Names, col = "red", lwd = 2)
+
+```
+
+
+```{r}
+shapiro.test(points_with_polygons$Class_Names)
+```
+
+
+```{r}
+# Convert extracted data to a data frame and remove geometry
+
+final_data <- st_drop_geometry(merged_data)
+
+# Rename column in a data frame
+final_data <- final_data %>%
+  rename(spring_resource_quality_2015 = Class_Names)
+
+subset_data <- final_data[, c("col", "row", "lon", "lat", "spring_resource_quality_2015")]
+
+# Save to CSV
+write.csv(subset_data,"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/ny_spring_floral_resource_quality_4km_by_4km.csv", row.names = FALSE)
+
+```
+
+
+```{r}
+# Rename column in a data frame
+final_data <- st_drop_geometry(merged_data)
+
+points_with_polygons <- points_with_polygons %>%
+  rename(spring_resource_quality_2015 = Class_Names)
+
+subset_data <- points_with_polygons[, c("Site","col", "row", "lon", "lat", "spring_resource_quality_2015")]
+
+# Save filtered polygons to a new shapefile
+st_write(subset_data, "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/ny_spring_floral_resource_quality_4km_by_4km.shp", append=FALSE)
+
+subset_data <- st_drop_geometry(subset_data)
+
+# Save to CSV
+write.csv(subset_data,"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/R_scripts/output/ny_spring_floral_resource_quality_4km_by_4km.csv", row.names = FALSE)
+```
+
+
+

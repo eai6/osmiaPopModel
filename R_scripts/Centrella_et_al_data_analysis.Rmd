@@ -1,0 +1,95 @@
+---
+title: "Centrella_et_al_data_analysis"
+author: "Edward Amoah"
+date: "2024-09-05"
+output: html_document
+---
+
+```{r}
+# load prism and set prism directory
+library(prism)
+library(sf)
+library(terra)
+prism_set_dl_dir("/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/prism")
+```
+
+
+
+```{r}
+# get data prism data
+
+tmean <- prism_archive_subset(
+  "tmean", "daily", minDate = "2015-05-01", maxDate = "2015-06-30"
+)
+
+ppt <- prism_archive_subset(
+  "ppt", "daily", minDate = "2015-05-01", maxDate = "2015-06-30"
+)
+
+```
+
+
+```{r}
+# create a raster stack from prism data 
+
+tmean_stack <- pd_stack(tmean)
+
+ppt_stack <- pd_stack(ppt)
+
+```
+
+
+```{r}
+sites <- read.csv("Sites_lat_long.csv")
+sites_ex <- sites[, c("lon", "lat")]
+```
+
+```{r}
+## extract data
+
+tmean_extracts <- extract(tmean_stack, sites_ex)
+
+ppt_extracts <- extract(ppt_stack, sites_ex)
+
+```
+
+```{r}
+
+tmean_bind <- cbind(sites, tmean_extracts)
+
+ppt_bind <- cbind(sites, ppt_extracts)
+
+```
+
+```{r}
+# save data as csv
+
+write.csv(tmean_bind, "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/scripts/Centrella_output/tmean_data.csv")
+
+write.csv(ppt_bind, "/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/scripts/Centrella_output/ppt_data.csv")
+
+```
+
+
+```{r}
+library(raster)
+
+file_paths <- c(
+"/Users/edwardamoah/Documents/GitHub/OsmiaPopModel/data/spring_forage/spring_1km_2015_pa.tif"
+)
+
+foraging_stack <- stack(file_paths)
+
+```
+
+
+
+```{r}
+
+foraging_extract_new <- extract(foraging_stack, sites_ex)
+
+foraging_bind <- cbind(sites, foraging_extract_new)
+
+#write.csv(foraging_bind, "../output/foraging_quality_pennsylvania_data.csv")
+
+```
